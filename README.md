@@ -30,7 +30,7 @@ Hooks that require Python dependencies, or specific to a language, have been ext
 ## Usage
 
     -   repo: https://github.com/Lucas-C/pre-commit-hooks
-        sha: v1.1.6
+        sha: v1.1.7
         hooks:
         -   id: forbid-crlf
         -   id: remove-crlf
@@ -50,13 +50,27 @@ Hooks that require Python dependencies, or specific to a language, have been ext
 For Java / Javascript / CSS, set `--comment-style /*| *| */`.
 For HTML files: `--comment-style <!--|  ~|  -->`.
 
-In case you want to remove the comment headers introduced by the `insert-license` hook,
+You can add `--detect-license-in-X-top-lines=<X>` to search for license in top X lines (default 5)
+
+
+In case you want to remove the comment headers introduced by `insert-license` hook,
 e.g. because you want to change the wording of your `LICENSE.txt` and update the comments in your source files:
 
 1. temporarily add the `--remove-header` arg in your `.pre-commit-config.yaml`
 2. run the hook on all your files: `pre-commit run insert-license --all-files`
 3. remove the `--remove-header` arg and update your `LICENSE.txt`
 4. re-run the hook on all your files
+
+You can add `--fuzzy-match-generates-todo` flag in which case fuzzy matching is done
+based on Levenshtein distance of set of words in tokenized license text (partial match in two sets is used).
+The license is detected if the ratio is > than `--fuzzy-ratio-cut-off` parameter (default 95) which is
+percentage of match. In case the fuzzy match is found (and no exact matching), appropriate TODO comment
+is inserted at the beginning of the match found. The comment inserted can be overridden by
+`--fuzzy-match-todo-comment=<COMMENT>` flag.
+
+License insertion can be skipped altogether if the file contains the
+'SKIP LICENSE INSERTION' in the first X top lines. This can also be overridden by
+`--skip-license-insertion-comment=<COMMENT>` flag.
 
 
 ## Handy shell functions
