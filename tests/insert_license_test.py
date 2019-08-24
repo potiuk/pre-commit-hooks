@@ -14,12 +14,30 @@ from pre_commit_hooks.insert_license import find_license_header_index
         ('LICENSE_with_trailing_newline.txt', 'LICENSE_without_trailing_newline.txt'),
         (
             ('module_without_license.py', '#', 'module_with_license.py'),
+            ('module_without_license_skip.py', '#', False),
             ('module_with_license.py', '#', False),
+            ('module_with_license_todo.py', '#', 'module_with_license_todo_duplicate_license.py'),
+
+            ('module_without_license.jinja', '{#||#}', 'module_with_license.jinja'),
+            ('module_without_license_skip.jinja', '{#||#}', False),
+            ('module_with_license.jinja', '{#||#}', False),
+            ('module_with_license_todo.jinja', '{#||#}', 'module_with_license_todo_duplicate_license.jinja'),
+
+            ('module_without_license_and_shebang.py', '#', 'module_with_license_and_shebang.py'),
+            ('module_with_license_and_shebang_todo.py', '#',
+                'module_with_license_and_shebang_todo_duplicate_license.py'),
+            ('module_without_license_and_shebang_skip.py', '#', False),
             ('module_with_license_and_shebang.py', '#', False),
+
             ('module_without_license.groovy', '//', 'module_with_license.groovy'),
+            ('module_without_license_skip.groovy', '//', False),
             ('module_with_license.groovy', '//', False),
+            ('module_with_license_todo.groovy', '//', 'module_with_license_todo_duplicate_license.groovy'),
+
             ('module_without_license.css', '/*| *| */', 'module_with_license.css'),
+            ('module_without_license_skip.css', '/*| *| */', False),
             ('module_with_license.css', '/*| *| */', False),
+            ('module_with_license_todo.css', '/*| *| */', 'module_with_license_todo_duplicate_license.css'),
         ),
     )),
 )
@@ -34,6 +52,54 @@ def test_insert_license(license_file_path, src_file_path, comment_prefix, new_sr
                 expected_content = expected_content_file.read()
             new_file_content = path.open().read()
             assert new_file_content == expected_content
+
+@pytest.mark.parametrize(
+    ('license_file_path', 'src_file_path', 'comment_prefix', 'new_src_file_expected'),
+    map(lambda a: a[:1] + a[1], product(  # combine license files with other args
+        ('LICENSE_with_trailing_newline.txt', 'LICENSE_without_trailing_newline.txt'),
+        (
+                ('module_without_license.jinja', '{#||#}', 'module_with_license.jinja'),
+                ('module_with_license.jinja', '{#||#}', False),
+                ('module_with_fuzzy_matched_license.jinja', '{#||#}', 'module_with_license_todo.jinja'),
+                ('module_with_license_todo.jinja', '{#||#}', False),
+
+                ('module_without_license.py', '#', 'module_with_license.py'),
+                ('module_with_license.py', '#', False),
+                ('module_with_fuzzy_matched_license.py', '#', 'module_with_license_todo.py'),
+                ('module_with_license_todo.py', '#', False),
+
+                ('module_with_license_and_shebang.py', '#', False),
+                ('module_with_fuzzy_matched_license_and_shebang.py', '#',
+                    'module_with_license_and_shebang_todo.py'),
+                ('module_with_license_and_shebang_todo.py', '#', False),
+
+                ('module_without_license.groovy', '//', 'module_with_license.groovy'),
+                ('module_with_license.groovy', '//', False),
+                ('module_with_fuzzy_matched_license.groovy', '//', 'module_with_license_todo.groovy'),
+                ('module_with_license_todo.groovy', '//', False),
+
+                ('module_without_license.css', '/*| *| */', 'module_with_license.css'),
+                ('module_with_license.css', '/*| *| */', False),
+                ('module_with_fuzzy_matched_license.css', '/*| *| */', 'module_with_license_todo.css'),
+                ('module_with_license_todo.css', '/*| *| */', False),
+        ),
+    )),
+)
+def test_fuzzy_match_license(license_file_path, src_file_path, comment_prefix, new_src_file_expected, tmpdir):
+    with chdir_to_test_resources():
+        path = tmpdir.join('src_file_path')
+        shutil.copy(src_file_path, path.strpath)
+        args = ['--license-filepath', license_file_path,
+                '--comment-style', comment_prefix,
+                '--fuzzy-match-generates-todo',
+                path.strpath]
+        assert insert_license(args) == (1 if new_src_file_expected else 0)
+        if new_src_file_expected:
+            with open(new_src_file_expected) as expected_content_file:
+                expected_content = expected_content_file.read()
+            new_file_content = path.open().read()
+            assert new_file_content == expected_content
+
 
 @pytest.mark.parametrize(
     ('src_file_content', 'expected_index'),

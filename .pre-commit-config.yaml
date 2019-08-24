@@ -22,6 +22,7 @@ repos:
         args:
         - --rcfile=.pylintrc
         - --reports=no
+        exclude: ^tests/resources/.*_todo.*$
 -   repo: local
     hooks:
     -   id: py.test
